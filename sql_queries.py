@@ -7,8 +7,8 @@ config.read('dwh.cfg')
 
 # DROP TABLES
 
-staging_events_table_drop = "DROP TABLE IF EXISTS"
-staging_songs_table_drop = "DROP TABLE IF EXISTS"
+staging_events_table_drop = "DROP TABLE IF EXISTS staging_events"
+staging_songs_table_drop = "DROP TABLE IF EXISTS staging_songs"
 songplay_table_drop = "DROP TABLE IF EXISTS songplays"
 user_table_drop = "DROP TABLE IF EXISTS user"
 song_table_drop = "DROP TABLE IF EXISTS songs"
@@ -17,10 +17,40 @@ time_table_drop = "DROP TABLE IF EXISTS time"
 
 # CREATE TABLES
 
-staging_events_table_create= ("""
+staging_events_table_create= ("""CREATE TABLE IF NOT EXISTS staging_events (
+    artist varchar,
+    auth varchar,
+    firstName varchar,
+    gender varchar,
+    itemInSession int,
+    lastName varchar,
+    length DOUBLE PRECISION,
+    level varchar,
+    location varchar,
+    method varchar,
+    page varchar,
+    registration varchar,
+    sessionId int,
+    song varchar,
+    status int,
+    ts bigint,
+    userAgent varchar,
+    userId int,
+    diststyle even
+);
 """)
 
-staging_songs_table_create = ("""
+staging_songs_table_create = ("""CREATE TABLE staging_songs (
+    num_songs text,
+    artist_id text,
+    artist_latitude numeric,
+    artist_logitude numeric,
+    artist_location varchar,
+    song_id int,
+    title varchar,
+    duration bigint,
+    year int
+);
 """)
 
 songplay_table_create = ("""CREATE TABLE songplays (
@@ -34,7 +64,7 @@ songplay_table_create = ("""CREATE TABLE songplays (
     location varchar,
     user_agent varchar,
     PRIMARY KEY ()
-)
+);
 """)
 
 user_table_create = ("""CREATE TABLE user (
@@ -64,7 +94,7 @@ artist_table_create = ("""CREATE TABLE artist (
     latitude numeric,
     longitude numeric,
     PRIMARY KEY (artist_id)
-)
+);
 """)
 
 time_table_create = ("""CREATE TABLE time (
@@ -76,20 +106,18 @@ time_table_create = ("""CREATE TABLE time (
     year numeric,
     weekday varchar,
     PRIMARY KEY (start_time)
-)
+);
 """)
 
 # STAGING TABLES
 
-staging_events_copy = ("""
-""").format()
+staging_events_copy = ("copy staging_songs from {} iam_role {} json 'auto'").format(config['S3']['LOG_DATA'], config['IAM_ROLE']['ARN'])
 
-staging_songs_copy = ("""
-""").format()
+staging_songs_copy = ("copy staging_songs from {} iam_role {} json 'auto'").format(config['S3']['SONG_DATA'],config['IAM_ROLE']['ARN'])
 
 # FINAL TABLES
 
-songplay_table_insert = ("""
+songplay_table_insert = ("""INSERT INTO songplay
 """)
 
 user_table_insert = ("""
