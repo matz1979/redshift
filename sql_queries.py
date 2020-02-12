@@ -22,82 +22,89 @@ staging_events_table_create= ("""CREATE TABLE IF NOT EXISTS staging_events (
     auth varchar,
     firstName varchar,
     gender varchar,
-    itemInSession int,
+    itemInSession integer,
     lastName varchar,
-    length DOUBLE PRECISION,
+    length decimal,
     level varchar,
     location varchar,
     method varchar,
     page varchar,
     registration varchar,
-    sessionId int,
+    sessionId integer,
     song varchar,
-    status int,
+    status integer,
     ts bigint,
     userAgent varchar,
-    userId int,
+    userId integer,
     diststyle even
 );
 """)
 
-staging_songs_table_create = ("""CREATE TABLE staging_songs (
-    num_songs text,
-    artist_id text,
-    artist_latitude numeric,
-    artist_logitude numeric,
+staging_songs_table_create = ("""CREATE TABLE IF NOT EXISTS staging_songs (
+    num_songs varchar,
+    artist_id varchar,
+    artist_latitude decimal,
+    artist_logitude decimal,
     artist_location varchar,
-    song_id int,
+    song_id integer,
     title varchar,
     duration bigint,
-    year int
+    year integer,
+    diststyle even
 );
 """)
 
-songplay_table_create = ("""CREATE TABLE songplays (
+songplay_table_create = ("""CREATE TABLE IF NOT EXISTS songplays (
     songplay_id IDENTITY(0,1),
     start_time timestamp,
-    user_id int,
+    user_id integer,
     level varchar,
     song_id varchar,
     artist_id varchar,
-    session_id int,
+    session_id integer,
     location varchar,
     user_agent varchar,
-    PRIMARY KEY ()
+    diststyle even,
+    PRIMARY KEY (songplay_id),
+    DISTKEY (songplay_id),
+    SORTKEY (start_time)
 );
 """)
 
-user_table_create = ("""CREATE TABLE user (
-    user_id int,
-    fisrt_name varchar,
+user_table_create = ("""CREATE TABLE IF NOT EXISTS user (
+    user_id integer SORTKEY,
+    first_name varchar,
     last_name varchar,
     gender varchar,
     level varchar,
-    PRIMARY KEY (user_id)
+    PRIMARY KEY (user_id),
+    SORTKEY (user_id)
     );
 """)
 
-song_table_create = ("""CREATE TABLE songs (
+song_table_create = ("""CREATE TABLE IF NOT EXISTS songs (
     song_id varchar,
     title varchar,
     artist_id varchar,
-    year int,
-    duration int,
-    PRIMARY KEY (song_id)
+    year integer,
+    duration decimal,
+    PRIMARY KEY (song_id),
+    SORTKEY (song_id)
 );
 """)
 
-artist_table_create = ("""CREATE TABLE artist (
-    artist_id int,
+artist_table_create = ("""CREATE TABLE IF NOT EXISTS artist (
+    artist_id integer,
     name varchar,
     location varchar,
-    latitude numeric,
-    longitude numeric,
-    PRIMARY KEY (artist_id)
+    latitude decimal,
+    longitude decimal,
+    PRIMARY KEY (artist_id),
+    SORTKEY (artist_id)
 );
 """)
 
-time_table_create = ("""CREATE TABLE time (
+time_table_create = ("""CREATE TABLE IF NOT EXISTS time (
     start_time timestamp,
     hour numeric,
     day numeric,
@@ -105,7 +112,8 @@ time_table_create = ("""CREATE TABLE time (
     month numeric,
     year numeric,
     weekday varchar,
-    PRIMARY KEY (start_time)
+    PRIMARY KEY (start_time),
+    SORTKEY (start_time)
 );
 """)
 
@@ -113,23 +121,33 @@ time_table_create = ("""CREATE TABLE time (
 
 staging_events_copy = ("copy staging_songs from {} iam_role {} json 'auto'").format(config['S3']['LOG_DATA'], config['IAM_ROLE']['ARN'])
 
-staging_songs_copy = ("copy staging_songs from {} iam_role {} json 'auto'").format(config['S3']['SONG_DATA'],config['IAM_ROLE']['ARN'])
+staging_songs_copy = ("copy staging_songs from {} iam_role {} json 'auto'").format(config['S3']['SONG_DATA'], config['IAM_ROLE']['ARN'])
 
 # FINAL TABLES
 
-songplay_table_insert = ("""INSERT INTO songplay
+songplay_table_insert = ("""INSERT INTO songplay (
+                         
+);
 """)
 
-user_table_insert = ("""
+user_table_insert = ("""INSERT INTO user (
+                         SELECT user_id, firstName, lastName, gender, level FROM staging_events
+);
 """)
 
-song_table_insert = ("""
+song_table_insert = ("""INSERT INTO song (
+                         SELECT 
+);
 """)
 
-artist_table_insert = ("""
+artist_table_insert = ("""INSERT INTO artist (
+                         SELECT 
+);
 """)
 
-time_table_insert = ("""
+time_table_insert = ("""INSERT INTO time (
+                         SELECT
+);
 """)
 
 # QUERY LISTS
