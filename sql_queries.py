@@ -119,19 +119,35 @@ time_table_create = ("""CREATE TABLE IF NOT EXISTS time (
 
 # STAGING TABLES
 
-staging_events_copy = ("copy staging_songs from {} iam_role {} json 'auto'").format(config['S3']['LOG_DATA'], config['IAM_ROLE']['ARN'])
+staging_events_copy = ("copy staging_songs from {} iam_role {} json 'auto'").format(config['S3']['LOG_DATA'], config['IAM_ROLE']['ARN'], config.get('S3', 'LOG_JSONPATH'))
 
 staging_songs_copy = ("copy staging_songs from {} iam_role {} json 'auto'").format(config['S3']['SONG_DATA'], config['IAM_ROLE']['ARN'])
 
 # FINAL TABLES
 
 songplay_table_insert = ("""INSERT INTO songplay (
-                         
+                            SELECT   
+                             events.ts,
+                             events.userId,
+                             events.level,
+                             songs.song_id,
+                             songs.artist_id,
+                             events.sessionId,
+                             events.location,
+                             events.userAgent
+                            FROM staging_events AS events
+                            JOIN staging_songs AS songs
+                            ON (events.artist = songs.artist_name)
+                            AND (events.song = songs.title)
+                            AND (events.length = songs.duration)
+                            WHERE events.page = 'NextSong';
+                             
 );
 """)
 
 user_table_insert = ("""INSERT INTO user (
-                         SELECT DISTINCT userId AS user_id, 
+                        SELECT DISTINCT 
+                         userId AS user_id, 
                          firstName AS first_name, 
                          lastName AS last_name, 
                          gender, 
@@ -142,7 +158,13 @@ user_table_insert = ("""INSERT INTO user (
 """)
 
 song_table_insert = ("""INSERT INTO song (
-                         SELECT 
+                        SELECT DISTINCT
+                         song_id,
+                         title,
+                         artist_id,
+                         year,
+                         duration
+                        FORM staging_songs
 );
 """)
 
@@ -155,7 +177,7 @@ artist_table_insert = ("""INSERT INTO artist (
                          artist_longitude 
                         FROM staging_songs sts
                         JOIN staging_events ste
-                        ON (ste.)
+                        ON (ste.location = sts.artist_location)
 );
 """)
 
