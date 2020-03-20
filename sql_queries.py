@@ -42,8 +42,8 @@ staging_songs_table_create = ("""CREATE TABLE IF NOT EXISTS staging_songs (
     num_songs       varchar,
     artist_id       text,
     artist_name     varchar,
-    artist_latitude decimal,
-    artist_logitude decimal,
+    artist_latitude float,
+    artist_longitude float,
     artist_location varchar,
     song_id         varchar,
     title           varchar,
@@ -51,9 +51,9 @@ staging_songs_table_create = ("""CREATE TABLE IF NOT EXISTS staging_songs (
     year            integer);
 """)
 
-songplay_table_create = ("""CREATE TABLE IF NOT EXISTS songplay (
+songplay_table_create = ("""CREATE TABLE IF NOT EXISTS songplays (
     songplay_id integer IDENTITY(0,1) distkey,
-    start_time bigint sortkey,
+    start_time timestamp sortkey,
     user_id integer,
     level varchar,
     song_id varchar,
@@ -144,43 +144,43 @@ song_table_insert = ("""INSERT INTO songs (song_id, title, artist_id, year, dura
 artist_table_insert = ("""INSERT INTO artist (artist_id, name, location, latitude, longitude)
                          SELECT
                          artist_id,
-                         ste.artist,
-                         artist_location,
-                         artist_latitude,
-                         artist_logitude
-                        FROM staging_songs sts
-                        JOIN staging_events ste
-                        ON (ste.location = sts.artist_location);
+                         artist_name as name,
+                         artist_location as location,
+                         artist_latitude as latitude,
+                         artist_longitude as longitude
+                        FROM staging_songs;
 """)
 
 time_table_insert = ("""INSERT INTO time (start_time, hour, day, week, month, year, weekday)
-                        SELECT ts,
-                         TIMESTAMP 'epoch' + ts/1000 * INTERVAL '1 Second ' as start_time,
-                         extract (h from start_time) AS hour,
-                         extract (d from start_time) AS day,
-                         extract (w from start_time) AS week,
-                         extract (mon from start_time) AS month,
-                         extract (y from start_time) AS year,
-                         extract (weekday from start_time) AS weekday
-                        FROM staging_events
+                        SELECT DISTINCT
+                         a.start_time,
+                         extract (h from a.start_time) AS hour,
+                         extract (d from a.start_time) AS day,
+                         extract (w from a.start_time) AS week,
+                         extract (mon from a.start_time) AS month,
+                         extract (y from a.start_time) AS year,
+                         extract (weekday from a.start_time) AS weekday
+                        FROM (SELECT TIMESTAMP 'epoch' + start_time/1000 *INTERVAL '1 second' as start_time FROM
+                        staging_events) a
                         ;
 """)
 
-songplay_table_insert = ("""INSERT INTO songplay (start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
+songplay_table_insert = ("""INSERT INTO songplays (start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
                             SELECT
-                             ste.ts as start_time,
-                             ste.userId AS user_id,
-                             ste.level,
-                             sts.song_id,
-                             sts.artist_id,
-                             ste.sessionId,
-                             ste.location,
-                             ste.userAgent
-                            FROM staging_events ste, staging_songs sts
-                            WHERE ste.page = 'NextSong'
-                            AND ste.song = sts.title
-                            AND ste.artist = sts.artist_name
-                            AND ste.length = sts.duration;
+                             event.ts as start_time,
+                             event.userId AS user_id,
+                             event.level AS level,
+                             songs.song_id AS song_id,
+                             songs.artist_id AS artist_id,
+                             event.sessionId AS session_id,
+                             event.location AS location,
+                             event.userAgent As user_agent
+                            FROM staging_events AS event
+                            JOIN staging_songs AS songs
+                            ON (event.artist = songs.artist_name)
+                            AND (event.song = songs.title)
+                            AND (event.length = songs.duration)
+                            WHERE event.page = 'NextSong';
 """)
 
 
